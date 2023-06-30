@@ -25,7 +25,7 @@ class Game(ShowBase):
         properties.setTitle("Eli")
         self.win.requestProperties(properties)
 
-        self.environment = self.loader.loadModel("PandaSampleModels-master/Environment/environment")
+        self.environment = self.loader.loadModel("Environment/environment")
         self.environment.reparentTo(self.render)
 
         self.tempActor = Actor('models/act_p3d_chan', 
