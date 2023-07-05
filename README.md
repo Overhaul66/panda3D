@@ -23,8 +23,12 @@ or
 ``` py panda.py ```
 
 ### What's New
-Added another program to test collision and better understand them...
-run by executing ```python3 collisionTest.py``` on Ubuntu, ```python collisionTest.py``` ot ```py collisionTest.py``` on windows
+Added a GameObject.py file to manage game objects efficiently
+###### What it contains...
+* A base class ```GameObject()```
+* A subclass ```Enemy()``` andd ```Player()``` which inherits ```GameObject()```
+* A ```WalkingEnemy()``` class which inherits Enemy
 
 ### Credits
 Thanks to @Marek the leader of this project for making our imaginations run wild
+
