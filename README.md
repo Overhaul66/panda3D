@@ -14,20 +14,11 @@ Thats all i can say for now 😁
 * ```pip install panda3d-gltf```
 
 ### How to run it 
-### Linux (Ubuntu)
-``` $ python3 panda.py ```
-
-### Windows 
-``` python panda.py ```
-or 
-``` py panda.py ```
+``` pip install -r requirements.txt ```
 
 ### What's New
-Added a GameObject.py file to manage game objects efficiently
-###### What it contains...
-* A base class ```GameObject()```
-* A subclass ```Enemy()``` andd ```Player()``` which inherits ```GameObject()```
-* A ```WalkingEnemy()``` class which inherits Enemy
+Added a cleanup method to the GameObject
+Which removes and clears the object from the root node
 
 ### Credits
 Thanks to @Marek the leader of this project for making our imaginations run wild
