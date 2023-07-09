@@ -9,10 +9,6 @@ This repository is mainly geared toward gaining enough insight to build **Eli**
 Eli is a maths teaching game... 
 Thats all i can say for now 😁
 
-### Installation
-* ```pip install panda3d```
-* ```pip install panda3d-gltf```
-
 ### How to run it 
 ``` pip install -r requirements.txt ```
 
