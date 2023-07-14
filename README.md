@@ -11,6 +11,7 @@ Thats all i can say for now 😁
 
 ### How to run it 
 ``` pip install -r requirements.txt ```
+
 ``` python3 Game.py ```
 
 ### What's New
