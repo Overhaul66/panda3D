@@ -11,11 +11,10 @@ Thats all i can say for now 😁
 
 ### How to run it 
 ``` pip install -r requirements.txt ```
+``` python3 Game.py ```
 
 ### What's New
-Added a cleanup method to the GameObject
-Which removes and clears the object from the root node
+Created an Enemy Class , which will be used as a base class for all types of enemies
 
-### Credits
-Thanks to @Marek the leader of this project for making our imaginations run wild
+
 
