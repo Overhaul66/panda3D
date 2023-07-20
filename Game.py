@@ -12,7 +12,7 @@ from panda3d.core import CollisionNode
 from panda3d.core import CollisionSphere
 from panda3d.core import CollisionTube
 
-from GameObject import Player
+from GameObject import *
 
 class Game(ShowBase):
     
@@ -96,6 +96,7 @@ class Game(ShowBase):
         self.taskMgr.add(self.updateTask, "update")
 
         self.player = Player() 
+        self.tempEnemy = WalkingEnemy(Vec3(5,0,0))
 
         self.disableMouse()
 
@@ -106,6 +107,7 @@ class Game(ShowBase):
         dt = globalClock.getDt()
         
         self.player.update(self.keyMap, dt)
+        self.tempEnemy.update(self.player, dt)
 
         return task.cont
 

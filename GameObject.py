@@ -73,8 +73,8 @@ class GameObject:
 
 class Player(GameObject):
     def __init__(self):
-        GameObject.__init__(
-            self,
+        super().__init__(
+            
             Vec3(0, 0, 0),
             "models/act_p3d_chan",
             {"stand": "models/a_p3d_chan_idle", "walk": "models/a_p3d_chan_run"},
@@ -91,7 +91,7 @@ class Player(GameObject):
         self.actor.loop("stand")
 
     def update(self, keys, dt):
-        GameObject.update(self, dt)
+        super().update(dt)
 
         self.walking = False
 
@@ -133,11 +133,11 @@ class Enemy(GameObject):
 
         self.scoreValue = 1
 
-        def update(self, player, dt):
+    def update(self, player, dt):
 
-            super().update(dt)
+        super().update(dt)
 
-            self.runLogic(player, dt)
+        self.runLogic(player, dt)
 
         # handle enemy animations
         if self.walking:
@@ -154,5 +154,55 @@ class Enemy(GameObject):
                     if not standControl.isPlaying():
                         self.actor.loop("stand")
 
-        def runLogic(self, player, dt):
+    def runLogic(self, player, dt):
             pass
+
+class WalkingEnemy(Enemy):
+
+    
+    def __init__(self, pos):
+        super().__init__( pos,
+                 "SimpleEnemy/simpleEnemy.egg",
+                 {
+                     "stand" : "SimpleEnemy/simpleEnemy-stand.egg",
+                     "walk" : "SimpleEnemy/simpleEnemy-walk.egg",
+                     "attack" : "SimpleEnemy/simpleEnemy-attack.egg",
+                     "die" : "SimpleEnemy/simpleEnemy-die.egg",
+                     "spawn" : "SimpleEnemy/simpleEnemy-spawn.egg",
+                 },
+                 3.0,
+                 7.0,
+                 "walkingEnemy"
+        )
+
+        self.attackDistance = 0.75
+        self.acceleration = 100.0
+
+         # direction vector of the enemy
+        self.yVector = Vec2(0,1)
+
+    def runLogic(self, player, dt):
+
+        # get the differnece between the player and the enemy
+        # this gives a vector with it direction pointing to the player
+        vectorToPlayer = player.actor.getPos() - self.actor.getPos() 
+
+        vectorToPlayer2D = vectorToPlayer.getXy()
+        distanceToPlayer = vectorToPlayer2D.length()
+
+        vectorToPlayer2D.normalize()
+
+        # set the angle of the enemy
+        heading = self.yVector.signedAngleDeg(vectorToPlayer2D)
+
+        # if player is not in attacking Range 
+        if distanceToPlayer > self.attackDistance * 0.9:
+            self.walking = True
+            vectorToPlayer.setZ(0)
+            vectorToPlayer.normalize()
+            self.velocity += vectorToPlayer * self.acceleration * dt
+        else:
+            self.walking = False
+            self.velocity.set(0,0,0)
+
+        self.actor.setH(heading)

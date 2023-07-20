@@ -15,7 +15,7 @@ Thats all i can say for now 😁
 ``` python3 Game.py ```
 
 ### What's New
-Created an Enemy Class , which will be used as a base class for all types of enemies
+Added a walking enemy , that chases the player
 
 
 
