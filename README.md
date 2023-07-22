@@ -15,7 +15,10 @@ Thats all i can say for now 😁
 ``` python3 Game.py ```
 
 ### What's New
-Added a walking enemy , that chases the player
+* Added a walking enemy , that chases the player
+* Added a new scene in the new scene folder
+* Introduced a config file
+
 
 
 
