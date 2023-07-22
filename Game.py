@@ -11,8 +11,11 @@ from panda3d.core import CollisionHandlerPusher
 from panda3d.core import CollisionNode
 from panda3d.core import CollisionSphere
 from panda3d.core import CollisionTube
+from panda3d.core import loadPrcFile
 
 from GameObject import *
+
+loadPrcFile("config/Config.prc")
 
 class Game(ShowBase):
     
@@ -20,11 +23,12 @@ class Game(ShowBase):
         super().__init__()
 
         self.render.setShaderAuto()
+        
 
-        properties = WindowProperties()
-        properties.setSize(1000, 750)
-        properties.setTitle("Game")
-        self.win.requestProperties(properties)
+        #properties = WindowProperties()
+        #properties.setSize(1000, 750)
+        #properties.setTitle("Game")
+        #self.win.requestProperties(properties)
 
         self.environment = self.loader.loadModel("Environment/environment")
         self.environment.reparentTo(self.render)

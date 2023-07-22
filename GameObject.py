@@ -39,6 +39,7 @@ class GameObject:
             frictionVal = FRICTION * dt
             if frictionVal > speed:
                 self.velocity.set(0, 0, 0)
+            # slows down the enenmy over time
             else:
                 frictionVec = -self.velocity
                 frictionVec.normalize()
@@ -85,6 +86,8 @@ class Player(GameObject):
         self.actor.getChild(0).setH(180)
 
         base.pusher.addCollider(self.collider, self.actor)
+        
+        # tell traverser to check collisions with self.collider , using base.pusher
         base.cTrav.addCollider(self.collider, base.pusher)
 
         # loop the stand animation
@@ -120,7 +123,7 @@ class Player(GameObject):
             if not walkControl.isPlaying():
                 self.actor.loop("walk")
         else:
-            # if walkig is false, check if stand animation playing , if not stop walk animation and play stand animation
+            # if walking is false, check if stand animation playing , if not stop walk animation and play stand animation
             standControl = self.actor.getAnimControl("stand")
             if not standControl.isPlaying():
                 self.actor.stop("walk")
