@@ -25,7 +25,7 @@ class Game(ShowBase):
 								)
 									
 
-		self.text = OnscreenText(pos=(0, 0.5), bg=Vec4(1,1,1,1),  font = loader.loadFont("challenge/SuperMario256.ttf"))
+		self.text = OnscreenText(pos=(0, 0.5), bg=Vec4(1,1,1,1),  font = loader.loadFont("SuperMario256.ttf"))
 	
 		self.button1 = DirectButton(text=('About'), scale=0.07, command= self.about, pos=(-0.1,0,-0.1))
 
