@@ -2,6 +2,8 @@ from panda3d.core import Vec3, Vec2
 from direct.actor.Actor import Actor
 from panda3d.core import CollisionSphere, CollisionNode
 
+import math
+
 FRICTION = 150.0
 
 
@@ -186,6 +188,7 @@ class WalkingEnemy(Enemy):
 
     def runLogic(self, player, dt):
 
+
         # get the differnece between the player and the enemy
         # this gives a vector with it direction pointing to the player
         vectorToPlayer = player.actor.getPos() - self.actor.getPos() 
@@ -209,3 +212,48 @@ class WalkingEnemy(Enemy):
             self.velocity.set(0,0,0)
 
         self.actor.setH(heading)
+
+
+class TrapEnemy(Enemy):
+
+    def __init__(self, pos):
+        super().__init__(pos, 
+                         "SlidingTrap/trap", 
+                         {'walk':'SlidingTrap/trap-walk',
+                          'stand':'SlidingTrap/trap-stand'
+                          }, 
+                         100.0, 
+                         10.0, 
+                         "trapEnemy")
+        
+        # make it an active collider object
+        base.pusher.add_collider(self.collider, self.actor)
+        base.cTrav.add_collider(self.collider, base.pusher)
+
+        self.moveInX = False
+
+        self.moveDirection = 0
+
+        self.ignorePlayer = False
+
+    def runLogic(self, player, dt):
+
+        if self.moveDirection != 0:
+            self.walking = True
+            if self.moveInX:
+                self.velocity.addX(self.moveDirection * self.acceleration * dt)
+            else:
+                self.velocity.addX(self.moveDirection * self.acceleration * dt)
+        else:
+            self.walking = False
+            diff = player.actor.getPos() - self.actor.getPos()
+
+            if self.moveInX:
+                detector = diff.y
+                movement = diff.x
+            else:
+                detector = diff.x
+                movement = diff.y
+
+            if abs(detector) < 0.5:
+                self.moveDirection = math.copysign(1, movement)

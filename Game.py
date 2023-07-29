@@ -101,6 +101,7 @@ class Game(ShowBase):
 
         self.player = Player() 
         self.tempEnemy = WalkingEnemy(Vec3(5,0,0))
+        self.trapEnemy = TrapEnemy(Vec3(-2, 7, 0))
 
         self.disableMouse()
 
@@ -112,6 +113,7 @@ class Game(ShowBase):
         
         self.player.update(self.keyMap, dt)
         self.tempEnemy.update(self.player, dt)
+        self.trapEnemy.update(self.player, dt)
 
         return task.cont
 
