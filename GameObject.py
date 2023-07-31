@@ -243,7 +243,7 @@ class TrapEnemy(Enemy):
             if self.moveInX:
                 self.velocity.addX(self.moveDirection * self.acceleration * dt)
             else:
-                self.velocity.addX(self.moveDirection * self.acceleration * dt)
+                self.velocity.addY(self.moveDirection * self.acceleration * dt)
         else:
             self.walking = False
             diff = player.actor.getPos() - self.actor.getPos()

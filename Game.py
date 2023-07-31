@@ -2,6 +2,8 @@ from direct.showbase.ShowBase import ShowBase
 from direct.actor.Actor import Actor
 from direct.task import Task
 
+import sys
+
 from panda3d.core import WindowProperties
 from panda3d.core import AmbientLight
 from panda3d.core import DirectionalLight
@@ -24,6 +26,7 @@ class Game(ShowBase):
 
         self.render.setShaderAuto()
         
+      
 
         #properties = WindowProperties()
         #properties.setSize(1000, 750)
@@ -35,6 +38,14 @@ class Game(ShowBase):
 
         self.pusher = CollisionHandlerPusher()
         self.cTrav = CollisionTraverser()
+
+        # add in pattern , for determing a node colliding into another node
+        self.pusher.add_in_pattern("%fn-into-%in")
+
+        self.accept("trapEnemy-into-wall", self.stopTrap)
+        self.accept("trapEnemy-into-trapEnemy", self.stopTrap)
+        self.accept("trapEnemy-into-player", self.trapHitsSomething)
+        #self.accept("trapEnemy-into-walkingEnemy", self.trapHitsSomething)
 
 
         mainlight = DirectionalLight("main light")
@@ -100,7 +111,7 @@ class Game(ShowBase):
         self.taskMgr.add(self.updateTask, "update")
 
         self.player = Player() 
-        self.tempEnemy = WalkingEnemy(Vec3(5,0,0))
+        self.tempEnemy = WalkingEnemy(Vec3(0,0,0))
         self.trapEnemy = TrapEnemy(Vec3(-2, 7, 0))
 
         self.disableMouse()
@@ -115,8 +126,42 @@ class Game(ShowBase):
         self.tempEnemy.update(self.player, dt)
         self.trapEnemy.update(self.player, dt)
 
+        print(self.player.health)
+
         return task.cont
 
+    def stopTrap(self, entry):
+        # get the from collision node path
+        # in this case trap
+        collider = entry.getFromNodePath()
+        
+        if collider.hasPythonTag("owner"):
+            # get reference to trap object
+            trap = collider.getPythonTag("owner")
+            trap.moveDirection = 0
+            trap.ignorePlayer = False
+
+    def trapHitsSomething(self, entry):
+        collider = entry.getFromNodePath()
+
+        if collider.hasPythonTag("owner"):
+            trap = collider.getPythonTag("owner")
+
+            if trap.moveDirection == 0:
+               return
+
+            # get into collider [ what the trapis colliding into ]
+            # in this case player or walking enemy
+            intoCollider = entry.getIntoNodePath()
+            if intoCollider.hasPythonTag("owner"):
+                # get the objects of the collider
+                obj = intoCollider.getPythonTag("owner")
+                if isinstance(obj, Player):
+                    if not trap.ignorePlayer:
+                        obj.alterHealth(-1)
+                        trap.ignorePlayer = True
+                else:
+                    obj.alterHealth(-10)
 
 game = Game()
 game.run()
