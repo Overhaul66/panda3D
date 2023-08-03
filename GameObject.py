@@ -1,11 +1,12 @@
 from panda3d.core import Vec3, Vec2
 from direct.actor.Actor import Actor
 from panda3d.core import CollisionSphere, CollisionNode
-
-import math
+from panda3d.core import CollisionRay, CollisionHandlerQueue
+from panda3d.core import BitMask32
 
 FRICTION = 150.0
 
+import math
 
 class GameObject:
     def __init__(self, pos, modelName, modelAnims, maxHealth, maxSpeed, colliderName):
@@ -73,6 +74,8 @@ class GameObject:
 
         self.collider = None
 
+    
+
 
 class Player(GameObject):
     def __init__(self):
@@ -87,13 +90,53 @@ class Player(GameObject):
         )
         self.actor.getChild(0).setH(180)
 
+         #load laser
+        self.beamModel = loader.loadModel("models/bambooLaser.egg")
+        self.beamModel.reparentTo(self.actor)
+        self.beamModel.setZ(1.5)
+        # prevents lights from affecting this model
+        self.beamModel.setLightOff()
+        self.beamModel.hide()
+       
+
         base.pusher.addCollider(self.collider, self.actor)
         
         # tell traverser to check collisions with self.collider , using base.pusher
         base.cTrav.addCollider(self.collider, base.pusher)
 
+        mask = BitMask32()
+        mask.setBit(1)
+
+        self.collider.node().setIntoCollideMask(mask)
+
+        mask = BitMask32()
+        mask.setBit(1)
+
+        self.collider.node().setFromCollideMask(mask)
+
         # loop the stand animation
         self.actor.loop("stand")
+
+        self.ray = CollisionRay(0,0,0,0,1,0)
+        rayNode = CollisionNode("playerRay")
+        rayNode.addSolid(self.ray)
+
+        self.rayNodePath = render.attachNewNode(rayNode)
+        self.rayQueue = CollisionHandlerQueue()
+
+        mask = BitMask32()
+        mask.setBit(2)
+        rayNode.setFromCollideMask(mask)
+        mask = BitMask32()
+        rayNode.setIntoCollideMask(mask)
+
+        # we want our ray to collide with things so tell the 
+        # traverser about it
+        base.cTrav.addCollider(self.rayNodePath, self.rayQueue)
+
+        self.damagePerSecond = -5.0
+
+        
 
     def update(self, keys, dt):
         super().update(dt)
@@ -113,6 +156,30 @@ class Player(GameObject):
         if keys["right"]:
             self.walking = True
             self.velocity.addX(self.acceleration * dt)
+        if keys['shoot']:
+            if self.rayQueue.getNumEntries() > 0:
+                # to make the first into object be at index 0
+                self.rayQueue.sortEntries()
+                # get the object the ray hit first
+                rayHit = self.rayQueue.getEntry(0)
+                hitPos = rayHit.getSurfacePoint(render)
+
+                hitNodePath = rayHit.getIntoNodePath()
+                if hitNodePath.hasPythonTag('owner'):
+                   
+                    hitObject = hitNodePath.getPythonTag('owner')
+                    if not isinstance(hitObject, TrapEnemy):
+                        hitObject.alterHealth(self.damagePerSecond*dt)
+
+            beamLength = (hitPos - self.actor.getPos()).length()
+            self.beamModel.setSy(beamLength)
+            self.beamModel.show()
+
+        else:
+            self.beamModel.hide()
+
+
+
 
         # if self.walking is true , stop stand animation
         if self.walking:
@@ -130,6 +197,12 @@ class Player(GameObject):
             if not standControl.isPlaying():
                 self.actor.stop("walk")
                 self.actor.loop("stand")
+
+    def cleanup(self):
+        base.cTrav.removeCollider(self.rayNodePath)
+        super().cleanup()
+
+  
 
 class Enemy(GameObject):
 
@@ -179,6 +252,11 @@ class WalkingEnemy(Enemy):
                  7.0,
                  "walkingEnemy"
         )
+
+        mask = BitMask32()
+        mask.setBit(2)
+
+        self.collider.node().setIntoCollideMask(mask)
 
         self.attackDistance = 0.75
         self.acceleration = 100.0
@@ -235,6 +313,20 @@ class TrapEnemy(Enemy):
         self.moveDirection = 0
 
         self.ignorePlayer = False
+        
+        # trap enemy should hit both player and walkingEnemy so 
+        # we set their mask here
+        mask = BitMask32()
+        mask.setBit(1)
+        mask.setBit(2)
+
+        self.collider.node().setIntoCollideMask(mask)
+
+        mask = BitMask32()
+        mask.setBit(1)
+        mask.setBit(2)
+
+        self.collider.node().setFromCollideMask(mask)
 
     def runLogic(self, player, dt):
 

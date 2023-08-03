@@ -45,7 +45,7 @@ class Game(ShowBase):
         self.accept("trapEnemy-into-wall", self.stopTrap)
         self.accept("trapEnemy-into-trapEnemy", self.stopTrap)
         self.accept("trapEnemy-into-player", self.trapHitsSomething)
-        #self.accept("trapEnemy-into-walkingEnemy", self.trapHitsSomething)
+        self.accept("trapEnemy-into-walkingEnemy", self.trapHitsSomething)
 
 
         mainlight = DirectionalLight("main light")
@@ -66,6 +66,8 @@ class Game(ShowBase):
         self.accept('w-up', self.updateKeyMap, ["up", False] )
         self.accept('s', self.updateKeyMap, ["down", True] )
         self.accept('s-up', self.updateKeyMap, ["down", False] )
+        self.accept('q', self.updateKeyMap, ['shoot', True])
+        self.accept('q-up', self.updateKeyMap, ['shoot', False])
         
 
         self.keyMap = {
@@ -114,6 +116,8 @@ class Game(ShowBase):
         self.tempEnemy = WalkingEnemy(Vec3(0,0,0))
         self.trapEnemy = TrapEnemy(Vec3(-2, 7, 0))
 
+       
+
         self.disableMouse()
 
     def updateKeyMap(self, controlName, controlState):
@@ -125,8 +129,6 @@ class Game(ShowBase):
         self.player.update(self.keyMap, dt)
         self.tempEnemy.update(self.player, dt)
         self.trapEnemy.update(self.player, dt)
-
-        print(self.player.health)
 
         return task.cont
 

@@ -4,7 +4,7 @@ from panda3d.core import DirectionalLight, Vec4, Vec3, WindowProperties
 from direct.task import Task
 from direct.gui.OnscreenText import OnscreenText
 
-import math
+import math, sys
 
 def rotate(vector, angle):
     x = vector.x * math.cos(angle) - vector.y * math.sin(angle)
@@ -21,14 +21,14 @@ class MyApp(ShowBase):
         self.props = WindowProperties()
         self.props.setCursorHidden(True)
         self.props.setMouseMode(WindowProperties.M_relative)
-        self.props.setFullscreen(True)
+        #self.props.setFullscreen(True)
 
         self.win.requestProperties(self.props)
 
         self.rot = 0
 
-        self.phoenix_bird = Actor('phoenix_bird/scene.gltf',
-                                  {'fly':'phoenix_bird/scene.gltf'}
+        self.phoenix_bird = Actor('phoenix_bird/scene.bam',
+                                  {'fly':'phoenix_bird/scene.bam'}
                                   )
         self.phoenix_bird.setPos(-10, 0, 1)
         self.phoenix_bird.loop('fly')
@@ -58,12 +58,16 @@ class MyApp(ShowBase):
         self.currentMouseX = 0
         self.previousMouseX = 0
         self.mouseMotion = False
+
+        self.accept('q', self.quit)
        
+    def quit(self):
+        sys.exit()
 
     def move_phoenix(self, task):
         dt = globalClock.getDt()
        
-        self.phoenix_bird.setPos(self.phoenix_bird.getPos() + Vec3(1 * dt, 0, 0) )
+        #self.phoenix_bird.setPos(self.phoenix_bird.getPos() + Vec3(1 * dt, 0, 0) )
 
         return task.cont 
     
@@ -72,6 +76,7 @@ class MyApp(ShowBase):
 
         if base.mouseWatcherNode.hasMouse():
             self.currentMouseX = base.mouseWatcherNode.getMouseX()
+            print(base.mouseWatcherNode.getMouseX())
            
 
         if self.currentMouseX != self.previousMouseX:
@@ -87,8 +92,7 @@ class MyApp(ShowBase):
             self.phoenix_bird.setH(self.phoenix_bird.getH() - self.currentMouseX * mouse_sensitivity)
 
         
-       
-        return task.cont
+       return task.cont
 
 
 
