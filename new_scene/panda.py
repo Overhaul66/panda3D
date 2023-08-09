@@ -20,12 +20,15 @@ class MyApp(ShowBase):
 
         self.props = WindowProperties()
         self.props.setCursorHidden(True)
-        self.props.setMouseMode(WindowProperties.M_relative)
-        #self.props.setFullscreen(True)
+        #self.props.setMouseMode(WindowProperties.M_relative)
+        self.props.setFullscreen(True)
 
         self.win.requestProperties(self.props)
 
         self.rot = 0
+
+        self.POSX = int(base.win.getXSize() / 2)
+        self.POSY = int(base.win.getYSize() / 2)
 
         self.phoenix_bird = Actor('phoenix_bird/scene.bam',
                                   {'fly':'phoenix_bird/scene.bam'}
@@ -46,7 +49,6 @@ class MyApp(ShowBase):
 
         # reparent the camera to the player
         base.cam.reparentTo(self.phoenix_bird)
-        base.cam.setPos(-2000,150, 100)
         base.cam.setH(265)
         
 
@@ -57,7 +59,10 @@ class MyApp(ShowBase):
 
         self.currentMouseX = 0
         self.previousMouseX = 0
-        self.mouseMotion = False
+        self.currentMouseY = 0
+        self.previousMouseY = 0
+        self.mouseMotionX = False
+        self.mouseMotionY = False
 
         self.accept('q', self.quit)
        
@@ -73,26 +78,55 @@ class MyApp(ShowBase):
     
     def mouse_movement(self, task):
 
-
+        # get mouse position
         if base.mouseWatcherNode.hasMouse():
             self.currentMouseX = base.mouseWatcherNode.getMouseX()
-            print(base.mouseWatcherNode.getMouseX())
+            self.currentMouseY = base.mouseWatcherNode.getMouseY()
+            # set mouse position to the middle of the window
+            base.win.movePointer(0,self.POSX,self.POSY)
+            
            
-
+           
+        # check if current mouse X position is equal to previous X mouse position
+        # if yes , there is a motion, if not there was no motion
         if self.currentMouseX != self.previousMouseX:
-            self.mouseMotion = True
+            self.mouseMotionX = True
         else:
-            self.mouseMotion = False
+            self.mouseMotionX = False
 
+        if self.currentMouseY != self.previousMouseY:
+            self.mouseMotionY = True
+        else:
+            self.mouseMotionY = False
+
+        # store current mouse X for reference
         self.previousMouseX = self.currentMouseX
+        self.previousMouseY = self.currentMouseY
 
+        # create mouse sensitivity
+        # somehow rotation moves slow!!1
         mouse_sensitivity = 100 * globalClock.getDt()
 
-        if self.mouseMotion:
-            self.phoenix_bird.setH(self.phoenix_bird.getH() - self.currentMouseX * mouse_sensitivity)
+        # rotate the player, als rotates the camera, 
+        # since camera is a child of the parent 
+        if self.mouseMotionX:
+            if self.currentMouseX > 0:
+                base.cam.setH(base.cam.getH() + self.currentMouseX * mouse_sensitivity)
+                print("mouse going right")
+            else:
+                base.cam.setH(base.cam.getH() - self.currentMouseX * mouse_sensitivity)
+                print("mouse going left")
 
+        if self.mouseMotionY:
+            if self.currentMouseY > 0:
+                base.cam.setP(base.cam.getP() + self.currentMouseY )
+            else:
+                base.cam.setP(base.cam.getP() - self.currentMouseY )
+          
         
-       return task.cont
+        
+      
+        return task.cont
 
 
 
