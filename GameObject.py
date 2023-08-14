@@ -3,6 +3,7 @@ from direct.actor.Actor import Actor
 from panda3d.core import CollisionSphere, CollisionNode
 from panda3d.core import CollisionRay, CollisionHandlerQueue
 from panda3d.core import BitMask32
+from panda3d.core import Plane, Point3
 
 FRICTION = 150.0
 
@@ -97,6 +98,10 @@ class Player(GameObject):
         # prevents lights from affecting this model
         self.beamModel.setLightOff()
         self.beamModel.hide()
+
+        self.lastMousePos = Vec2(0,0)
+        self.groundPlane = Plane(Vec3(0,0,1), Vec3(0,0,0))
+        self.yVector = Vec2(0,1)
        
 
         base.pusher.addCollider(self.collider, self.actor)
@@ -140,6 +145,25 @@ class Player(GameObject):
 
     def update(self, keys, dt):
         super().update(dt)
+
+        mousePos3D = Point3()
+        nearPoint = Point3()
+        farPoint = Point3()
+
+        mouseWatcher = base.mouseWatcherNode
+        if mouseWatcher.hasMouse():
+            mousePos = mouseWatcher.getMouse()
+        else:
+            mousePos = self.lastMousePos
+
+        # we want to determine the position of the 2D mouse pointer in 3D
+        # the extrude function finds the (3D position) third components for the 2D mouse pointer 
+        # position
+        base.camLens.extrude(mousePos, nearPoint, farPoint)
+        self.groundPlane.intersectsLine(mousePos3D,
+                                        render.getRelativePoint(base.camera, nearPoint),
+                                        render.getRelativePoint(base.camera, farPoint)
+                                    )
 
         self.walking = False
 
@@ -198,6 +222,24 @@ class Player(GameObject):
                 self.actor.stop("walk")
                 self.actor.loop("stand")
 
+        firingVector = Vec3(mousePos3D - self.actor.getPos())
+        firingVector2D = firingVector.getXy()
+        firingVector2D.normalize()
+        firingVector.normalize()
+
+        #find the angle between yVector and firingVector2D
+        heading = self.yVector.signedAngleDeg(firingVector2D)
+
+        # makes the player faces the direction of the mouse
+        self.actor.setH(heading)
+
+        if firingVector.length() > 0.001:
+            self.ray.setOrigin(self.actor.getPos())
+            self.ray.setDirection(firingVector)
+
+        # store the mouse pos when mouse is not detected
+        self.lastMousePos = mousePos
+ 
     def cleanup(self):
         base.cTrav.removeCollider(self.rayNodePath)
         super().cleanup()
