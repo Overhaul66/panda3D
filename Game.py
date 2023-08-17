@@ -116,8 +116,6 @@ class Game(ShowBase):
         self.tempEnemy = WalkingEnemy(Vec3(0,0,0))
         self.trapEnemy = TrapEnemy(Vec3(-2, 7, 0))
 
-       
-
         self.disableMouse()
 
     def updateKeyMap(self, controlName, controlState):

@@ -4,10 +4,12 @@ from panda3d.core import CollisionSphere, CollisionNode
 from panda3d.core import CollisionRay, CollisionHandlerQueue
 from panda3d.core import BitMask32
 from panda3d.core import Plane, Point3
+from panda3d.core import CollisionSegment
 
 FRICTION = 150.0
 
 import math
+import random
 
 class GameObject:
     def __init__(self, pos, modelName, modelAnims, maxHealth, maxSpeed, colliderName):
@@ -61,7 +63,7 @@ class GameObject:
         if self.health > self.maxHealth:
             self.health = self.maxHealth
 
-    # clean objec
+    # clean object
     def cleanup(self):
         if self.collider is not None and not self.collider.isEmpty():
             self.collider.clearPythonTag("owner")
@@ -295,6 +297,13 @@ class WalkingEnemy(Enemy):
                  "walkingEnemy"
         )
 
+        self.attackDelay = 0.3
+        # the delay between the start of the attack and the potential of it landing
+        # when attck delay timer finishes there is a potential land of attack
+        self.attackDelayTimer = 0
+        # time the enemy takes to do another attack on the player
+        self.attackWaitTimer = 0
+
         mask = BitMask32()
         mask.setBit(2)
 
@@ -303,12 +312,35 @@ class WalkingEnemy(Enemy):
         self.attackDistance = 0.75
         self.acceleration = 100.0
 
+        # create a segment collision 
+        self.attackSegment = CollisionSegment(0, 0, 0, 10, 0, 0)
+        segmentNode = CollisionNode("enemyAttackSegment")
+        segmentNode.addSolid(self.attackSegment)
+
+        mask = BitMask32()
+        mask.setBit(1)
+
+        segmentNode.setFromCollideMask(mask)
+
+        mask = BitMask32()
+        segmentNode.setIntoCollideMask(mask)
+
+        self.attackSegmentNodePath = render.attachNewNode(segmentNode)
+        self.attackSegmentNodePath.show()
+        self.segmentQueue = CollisionHandlerQueue()
+
+        base.cTrav.addCollider(self.attackSegmentNodePath, self.segmentQueue)
+
+        # damage the enemy attack does
+        self.attackDamage = -1
+
          # direction vector of the enemy
         self.yVector = Vec2(0,1)
 
     def runLogic(self, player, dt):
-
-
+        # set the start and end of the segment
+        self.attackSegment.setPointA(self.actor.getPos())
+        self.attackSegment.setPointB(self.actor.getPos() + self.actor.getQuat().getForward() * self.attackDistance)
         # get the differnece between the player and the enemy
         # this gives a vector with it direction pointing to the player
         vectorToPlayer = player.actor.getPos() - self.actor.getPos() 
@@ -323,13 +355,46 @@ class WalkingEnemy(Enemy):
 
         # if player is not in attacking Range 
         if distanceToPlayer > self.attackDistance * 0.9:
-            self.walking = True
-            vectorToPlayer.setZ(0)
-            vectorToPlayer.normalize()
-            self.velocity += vectorToPlayer * self.acceleration * dt
+            # get the atack animation control
+            attackControl = self.actor.getAnimControl("attack")
+            if not attackControl.isPlaying():
+                self.walking = True
+                vectorToPlayer.setZ(0)
+                vectorToPlayer.normalize()
+                self.velocity += vectorToPlayer * self.acceleration * dt
+                self.attackWaitTimer = 0.2
+                self.attackDelayTimer = 0
         else:
             self.walking = False
             self.velocity.set(0,0,0)
+
+            if self.attackDelayTimer > 0:
+                self.attackDelayTimer -= dt
+                # the enemy makes a successful attack landing
+                # check if the player was hit
+                if self.attackDelayTimer <= 0:
+                    # check for a player hit
+                    if self.segmentQueue.getNumEntries() > 0: # if true, there was hit
+                        # now check if it is the player
+                        self.segmentQueue.sortEntries()
+                        # get the first hit
+                        segmentHit = self.segmentQueue.getEntry(0)
+                        hitNodePath = segmentHit.getIntoNodePath()
+                        if hitNodePath.hasPythonTag("owner"):
+                            # apply damage
+                            hitObject = hitNodePath.getPythonTag('owner')
+                            hitObject.alterHealth(self.attackDamage)
+                            self.attackWaitTimer = 1.0
+            elif self.attackWaitTimer > 0:
+                self.attackWaitTimer -= dt
+                # if the timer has ended
+                if self.attackWaitTimer <= 0:
+                    # start attack
+                    self.attackWaitTimer = random.uniform(0.5, 0.7)
+                    self.attackDelayTimer = self.attackDelay
+                    self.actor.play("attack")
+
+
 
         self.actor.setH(heading)
 
