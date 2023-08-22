@@ -3,8 +3,9 @@ from direct.actor.Actor import Actor
 from panda3d.core import CollisionSphere, CollisionNode
 from panda3d.core import CollisionRay, CollisionHandlerQueue
 from panda3d.core import BitMask32
-from panda3d.core import Plane, Point3
+from panda3d.core import Plane, Point3, Point2
 from panda3d.core import CollisionSegment
+from direct.gui.OnscreenText import OnscreenText
 
 FRICTION = 150.0
 
@@ -143,6 +144,14 @@ class Player(GameObject):
 
         self.damagePerSecond = -5.0
 
+        self.UIlives = OnscreenText(
+            text = "lives : "+ str(self.health),
+            pos = Point2(-1.23,0.8)
+        )
+
+    def alterHealth(self, dHealth):
+        super().alterHealth(dHealth)
+        self.UIlives.setText("lives : "+ str(self.health))
         
 
     def update(self, keys, dt):
