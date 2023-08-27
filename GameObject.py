@@ -6,6 +6,8 @@ from panda3d.core import BitMask32
 from panda3d.core import Plane, Point3, Point2
 from panda3d.core import CollisionSegment
 from direct.gui.OnscreenText import OnscreenText
+from direct.gui.OnscreenImage import OnscreenImage
+from panda3d.core import TextNode
 
 FRICTION = 150.0
 
@@ -84,7 +86,6 @@ class GameObject:
 class Player(GameObject):
     def __init__(self):
         super().__init__(
-            
             Vec3(0, 0, 0),
             "models/act_p3d_chan",
             {"stand": "models/a_p3d_chan_idle", "walk": "models/a_p3d_chan_run"},
@@ -106,7 +107,6 @@ class Player(GameObject):
         self.groundPlane = Plane(Vec3(0,0,1), Vec3(0,0,0))
         self.yVector = Vec2(0,1)
        
-
         base.pusher.addCollider(self.collider, self.actor)
         
         # tell traverser to check collisions with self.collider , using base.pusher
@@ -144,16 +144,41 @@ class Player(GameObject):
 
         self.damagePerSecond = -5.0
 
-        self.UIlives = OnscreenText(
-            text = "lives : "+ str(self.health),
-            pos = Point2(-1.23,0.8)
+        self.score = 0
+
+        self.scoreUI = OnscreenText(
+            text = "0",
+            pos = Point2(-1.23,0.65),
+            mayChange=True,
         )
+        #list to store life images 
+        self.healthIcons = []
+        # for loop to create and store love images in self.healthIcons
+        for i in range(self.maxHealth):
+            heartImage = OnscreenImage(
+                image= "UI/health.png",
+                pos = (-1.23 + (i * 0.1),0, 0.8),
+                scale=0.04
+            )
+            #set the transparency of the image
+            heartImage.setTransparency(True)
+
+            self.healthIcons.append(heartImage)
 
     def alterHealth(self, dHealth):
         super().alterHealth(dHealth)
-        self.UIlives.setText("lives : "+ str(self.health))
-        
+        self.updateHealthUI()
 
+    def updateHealthUI(self):
+        for index, icon in enumerate(self.healthIcons):
+            if index < self.health:
+                icon.show()
+            else:
+                icon.hide()
+
+    def updateScore(self):
+        self.scoreUI.setText(str(self.score))
+        
     def update(self, keys, dt):
         super().update(dt)
 
@@ -253,6 +278,13 @@ class Player(GameObject):
  
     def cleanup(self):
         base.cTrav.removeCollider(self.rayNodePath)
+        # remove scoreUI from root path
+        self.scoreUI.removeNode()
+
+        # remove icons from root path
+        for icon in self.healthIcons:
+            icon.removeNode()
+
         super().cleanup()
 
   
@@ -407,6 +439,17 @@ class WalkingEnemy(Enemy):
 
         self.actor.setH(heading)
 
+    def alterHealth(self, dHealth):
+        self.updateHealthVisual()
+        super().alterHealth(dHealth)
+        
+
+    def updateHealthVisual(self):
+        perc = self.health/self.maxHealth
+        if perc < 0:
+            perc = 0
+
+        self.actor.setColorScale(perc, perc, perc, 1)            
 
 class TrapEnemy(Enemy):
 
