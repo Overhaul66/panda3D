@@ -1,4 +1,4 @@
-from panda3d.core import Vec3, Vec2
+from panda3d.core import Vec3, Vec2, Vec4
 from direct.actor.Actor import Actor
 from panda3d.core import CollisionSphere, CollisionNode
 from panda3d.core import CollisionRay, CollisionHandlerQueue
@@ -7,7 +7,8 @@ from panda3d.core import Plane, Point3, Point2
 from panda3d.core import CollisionSegment
 from direct.gui.OnscreenText import OnscreenText
 from direct.gui.OnscreenImage import OnscreenImage
-from panda3d.core import TextNode
+from panda3d.core import PointLight
+
 
 FRICTION = 150.0
 
@@ -165,9 +166,41 @@ class Player(GameObject):
 
             self.healthIcons.append(heartImage)
 
+        self.beamHitModel = loader.loadModel("BambooLaser/bambooLaserHit.egg")
+        self.beamHitModel.reparentTo(render)
+        self.beamHitModel.setZ(1.5)
+        self.beamHitModel.setLightOff()
+        self.beamHitModel.hide()
+
+        self.beamHitPulseRate = 0.15
+        self.beamHitTimer = 0
+
+        self.beamHitLight = PointLight("beamHitLight")
+        self.beamHitLight.setColor(Vec4(0.1,1.0,0.2,1))
+
+        # These "attenuation" values govern how the light
+        # fades with distance. They are, respectively,
+        # the constant, linear, and quadratic coefficients
+        # of the light's falloff equation.  
+
+        self.beamHitLight.setAttenuation((1.0,0.1,0.5))
+        self.beamHitLightNodePath = render.attachNewNode(self.beamHitLight)
+
+        self.damageTakenModel = loader.loadModel("BambooLaser/playerHit.egg")
+        self.damageTakenModel.setLightOff()
+        self.damageTakenModel.setZ(0.1)
+        self.damageTakenModel.reparentTo(self.actor)
+        self.damageTakenModel.hide()
+
+        self.damageTakenModelTimer = 0
+        self.damageTakenModelDuration = 0.15
+
     def alterHealth(self, dHealth):
         super().alterHealth(dHealth)
         self.updateHealthUI()
+        self.damageTakenModel.setH(random.uniform(0.0,360.0))
+        self.damageTakenModel.show()
+        
 
     def updateHealthUI(self):
         for index, icon in enumerate(self.healthIcons):
@@ -218,6 +251,8 @@ class Player(GameObject):
             self.velocity.addX(self.acceleration * dt)
         if keys['shoot']:
             if self.rayQueue.getNumEntries() > 0:
+                # flag to determine if an enemy is hit
+                scoredHit = False
                 # to make the first into object be at index 0
                 self.rayQueue.sortEntries()
                 # get the object the ray hit first
@@ -230,23 +265,37 @@ class Player(GameObject):
                     hitObject = hitNodePath.getPythonTag('owner')
                     if not isinstance(hitObject, TrapEnemy):
                         hitObject.alterHealth(self.damagePerSecond*dt)
+                        scoredHit = True
+                beamLength = (hitPos - self.actor.getPos()).length()
+                self.beamModel.setSy(beamLength)
+                self.beamModel.show()
 
-            beamLength = (hitPos - self.actor.getPos()).length()
-            self.beamModel.setSy(beamLength)
-            self.beamModel.show()
-
+                if scoredHit:
+                    #show the beam hit when player is hit
+                    self.beamHitModel.show()
+                    self.beamHitModel.setPos(hitPos)
+                    self.beamHitLightNodePath.setPos(hitPos + Vec3(0,0,0.5))
+                    #check if the there is a pointlight in the SCENEgraph
+                    if  not render.hasLight(self.beamHitLightNodePath):
+                        # set the light if not
+                        render.setLight(self.beamHitLightNodePath)
+                else:
+                    if render.hasLight(self.beamHitLightNodePath):
+                        render.clearLight(self.beamHitLightNodePath)
+                    self.beamHitModel.hide()
         else:
             self.beamModel.hide()
-
-
-
-
+            #if player is not lasering the enemy
+            # hide the beam hit model an clear the light
+            self.beamHitModel.hide()
+            
+            if render.hasLight(self.beamHitLightNodePath):
+                render.clearLight(self.beamHitLightNodePath)
         # if self.walking is true , stop stand animation
         if self.walking:
             standControl = self.actor.getAnimControl("stand")
             if standControl.isPlaying():
                 standControl.stop()
-
             # if walk animation is not playing, start playing it
             walkControl = self.actor.getAnimControl("walk")
             if not walkControl.isPlaying():
@@ -275,15 +324,36 @@ class Player(GameObject):
 
         # store the mouse pos when mouse is not detected
         self.lastMousePos = mousePos
- 
+
+        self.beamHitTimer -= dt
+        if self.beamHitTimer <= 0:
+            self.beamHitTimer = self.beamHitPulseRate
+            self.beamHitModel.setH(random.uniform(0.0,360.0))
+        self.beamHitModel.setScale(math.sin(self.beamHitTimer*3.142/self.beamHitPulseRate)*0.4 + 0.9)
+
+        # accumulate time over time :)
+        # if timer is equal to the duration 
+        # hide the model
+        # this makes the hit model show the model for a period of time
+        self.damageTakenModelTimer += dt
+        if self.damageTakenModelTimer >= self.damageTakenModelDuration:
+            self.damageTakenModelTimer = 0
+            self.damageTakenModel.hide()
+        
+        self.damageTakenModel.setScale(2 + self.damageTakenModelTimer)
+        print(self.damageTakenModel.getScale())
+
     def cleanup(self):
         base.cTrav.removeCollider(self.rayNodePath)
         # remove scoreUI from root path
         self.scoreUI.removeNode()
-
         # remove icons from root path
         for icon in self.healthIcons:
             icon.removeNode()
+        # remove the beam hit model, and light
+        self.beamHitModel.removeNode()
+        render.clearLight(self.beamHitLightNodePath)
+        self.beamHitLightNodePath.removeNode()
 
         super().cleanup()
 
