@@ -19,14 +19,13 @@ from GameObject import *
 
 loadPrcFile("config/Config.prc")
 
+import random
 class Game(ShowBase):
     
     def __init__(self):
         super().__init__()
 
         self.render.setShaderAuto()
-        
-      
 
         #properties = WindowProperties()
         #properties.setSize(1000, 750)
@@ -112,9 +111,38 @@ class Game(ShowBase):
 
         self.taskMgr.add(self.updateTask, "update")
 
-        self.player = Player() 
-        self.tempEnemy = WalkingEnemy(Vec3(0,0,0))
-        self.trapEnemy = TrapEnemy(Vec3(-2, 7, 0))
+        #player character will be created in the startGame method
+        self.player = None
+        self.enemies = []
+        self.trapEnemies = []
+        self.deadEnemies = []
+
+        # setup some spawn points
+        self.spawnPoints = []
+        numPointsPerWall = 5
+        for i in range(numPointsPerWall):
+            coord = 7.0/numPointsPerWall + 0.5
+            self.spawnPoints.append(Vec3(-7.0, coord, 0))
+            self.spawnPoints.append(Vec3(7.0, coord, 0))
+            self.spawnPoints.append(Vec3(coord, -7.0, 0))
+            self.spawnPoints.append(Vec3(coord, 7.0, 0))
+        # Values to control when to spawn enemies, and
+        # how many enemies there may be at once     
+        self.initialSpawnInterval = 1.0
+        self.minimumSpawnInterval = 0.2
+        self.spawnInterval = self.initialSpawnInterval
+        self.spawnTimer = self.spawnInterval
+        self.maxEnemies = 2
+        self.maximumMaxEnemies = 20
+
+        self.numTrapsPerSide = 2
+
+        self.difficultyInterval = 5.0
+        self.difficultyTimer = self.difficultyInterval
+
+        self.exitFunc = self.cleanup
+
+        self.startGame()
 
         self.disableMouse()
 
@@ -124,9 +152,54 @@ class Game(ShowBase):
     def updateTask(self, task):
         dt = globalClock.getDt()
         
-        self.player.update(self.keyMap, dt)
-        self.tempEnemy.update(self.player, dt)
-        self.trapEnemy.update(self.player, dt)
+        #if the player is dead , or has not started to play
+        # ignore this logic
+        if self.player is not None:
+            if self.player.health > 0:
+                self.player.update(self.keyMap, dt)
+
+                # wait to spawn an enemy
+                self.spawnTimer -= dt
+                if self.spawnTimer <= 0:
+                    self.spawnTimer = self.spawnInterval
+                    self.spawnEnemy()
+
+                # update all enemies and traps
+                [enemy.update(self.player, dt) for enemy in self.enemies]
+                [trap.update(self.player, dt) for trap in self.trapEnemies]
+                #get a list of daed enemies
+                newlyDeadEnemies = [enemy for enemy in self.enemies if enemy.health <= 0]
+                #remove dead enemies from enemy list
+                self.enemies = [enemy for enemy in self.enemies if enemy.health > 0]
+
+                for enemy in newlyDeadEnemies:
+                    enemy.collider.removeNode()
+                    enemy.actor.play("die")
+                    self.player.score += enemy.scoreValue
+                # update player score if dead enemies are more that 0
+                if len(newlyDeadEnemies) > 0:
+                    self.player.updateScore()
+
+                self.deadEnemies += newlyDeadEnemies
+
+                enemiesAnimatingDeaths = []
+                for enemy in self.deadEnemies:
+                    deathAnimControl = enemy.actor.getAnimControl("die")
+                    if deathAnimControl is None or not deathAnimControl.isPlaying():
+                        enemy.cleanup()
+                    else:
+                        enemiesAnimatingDeaths.append(enemy)
+                self.deadEnemies = enemiesAnimatingDeaths
+
+                #make the game more difficult over time
+                self.difficultyTimer -= dt
+                if self.difficultyTimer <= 0:
+                    self.difficultyTimer = self.difficultyInterval
+                    if self.maxEnemies < self.maximumMaxEnemies:
+                        self.maxEnemies += 1
+                    if self.spawnInterval > self.minimumSpawnInterval:
+                        self.spawnInterval -= 0.1
+
 
         return task.cont
 
@@ -162,6 +235,83 @@ class Game(ShowBase):
                         trap.ignorePlayer = True
                 else:
                     obj.alterHealth(-10)
+    
+    def startGame(self):
+        # clean up anything in the
+        # level : enemies, traps, etc. before
+        # starting a new one.
+        self.cleanup()
+        self.player = Player()
+
+        self.maxEnemies = 2
+        self.spawnInterval = self.initialSpawnInterval
+        self.difficultyTimer = self.difficultyInterval
+
+        sideTrapSlots = [
+            [],
+            [],
+            [],
+            []
+        ]
+        trapSlotDistance = 0.4
+        slotPos = -8 + trapSlotDistance
+        while slotPos < 8:
+            if abs(slotPos) > 1.0:
+                sideTrapSlots[0].append(slotPos)
+                sideTrapSlots[1].append(slotPos)
+                sideTrapSlots[2].append(slotPos)
+                sideTrapSlots[3].append(slotPos)
+            slotPos += trapSlotDistance
+
+        for i in range(self.numTrapsPerSide):
+            slot = sideTrapSlots[0].pop(random.randint(0, len(sideTrapSlots[0])-1))
+            trap = TrapEnemy(Vec3(slot, 7.0, 0))
+            self.trapEnemies.append(trap)
+
+            slot = sideTrapSlots[1].pop(random.randint(0, len(sideTrapSlots[1])-1))
+            trap = TrapEnemy(Vec3(slot, -7.0, 0))
+            self.trapEnemies.append(trap)
+
+            slot = sideTrapSlots[2].pop(random.randint(0, len(sideTrapSlots[2])-1))
+            trap = TrapEnemy(Vec3(7.0,slot, 0))
+            trap.moveInX = True
+            self.trapEnemies.append(trap)
+
+            slot = sideTrapSlots[3].pop(random.randint(0, len(sideTrapSlots[3])-1))
+            trap = TrapEnemy(Vec3(-7.0,slot, 0))
+            trap.moveInX = True
+            self.trapEnemies.append(trap)
+
+    def cleanup(self):
+        # Call our various cleanup methods,
+        # empty the various lists,
+        # and make the player "None" again.
+
+        for enemy in self.enemies:
+            enemy.cleanup()
+        self.enemies = []
+
+        for enemy in self.deadEnemies:
+            enemy.cleanup()
+        self.deadEnemies = []
+
+        for trap in self.trapEnemies:
+            trap.cleanup()
+        self.trapEnemies = []
+
+        if self.player is not None:
+            self.player.cleanup()
+            self.player = None
+
+    def quit(self):
+        self.cleanup()
+        base.userExit()
+
+    def spawnEnemy(self):
+        if len(self.enemies) < self.maxEnemies:
+            spawnPoint = random.choice(self.spawnPoints)
+            newEnemy = WalkingEnemy(spawnPoint)
+            self.enemies.append(newEnemy)
 
 game = Game()
 game.run()

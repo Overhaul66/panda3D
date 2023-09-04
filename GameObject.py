@@ -196,12 +196,12 @@ class Player(GameObject):
         self.damageTakenModelDuration = 0.15
 
     def alterHealth(self, dHealth):
-        super().alterHealth(dHealth)
         self.updateHealthUI()
-        self.damageTakenModel.setH(random.uniform(0.0,360.0))
         self.damageTakenModel.show()
+        self.damageTakenModel.setH(random.uniform(0.0,360.0))
+        self.damageTakenModelTimer = self.damageTakenModelDuration
+        super().alterHealth(dHealth)
         
-
     def updateHealthUI(self):
         for index, icon in enumerate(self.healthIcons):
             if index < self.health:
@@ -286,7 +286,7 @@ class Player(GameObject):
         else:
             self.beamModel.hide()
             #if player is not lasering the enemy
-            # hide the beam hit model an clear the light
+            # hide the beam hit model and clear the light
             self.beamHitModel.hide()
             
             if render.hasLight(self.beamHitLightNodePath):
@@ -335,13 +335,14 @@ class Player(GameObject):
         # if timer is equal to the duration 
         # hide the model
         # this makes the hit model show the model for a period of time
-        self.damageTakenModelTimer += dt
-        if self.damageTakenModelTimer >= self.damageTakenModelDuration:
-            self.damageTakenModelTimer = 0
+        if self.damageTakenModelTimer > 0:
+            self.damageTakenModelTimer -= dt
+            self.damageTakenModel.setScale(2.0 - self.damageTakenModelTimer/self.damageTakenModelDuration)
+            if self.damageTakenModelTimer <= 0:
+                self.damageTakenModel.hide()
+        if self.damageTakenModelTimer <= 0:
             self.damageTakenModel.hide()
-        
-        self.damageTakenModel.setScale(2 + self.damageTakenModelTimer)
-        print(self.damageTakenModel.getScale())
+       
 
     def cleanup(self):
         base.cTrav.removeCollider(self.rayNodePath)
@@ -449,6 +450,11 @@ class WalkingEnemy(Enemy):
         self.yVector = Vec2(0,1)
 
     def runLogic(self, player, dt):
+
+        spawnControl = self.actor.getAnimControl("spawn")
+        if spawnControl is not None and spawnControl.isPlaying():
+            return
+
         # set the start and end of the segment
         self.attackSegment.setPointA(self.actor.getPos())
         self.attackSegment.setPointB(self.actor.getPos() + self.actor.getQuat().getForward() * self.attackDistance)
