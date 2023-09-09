@@ -88,8 +88,8 @@ class Player(GameObject):
     def __init__(self):
         super().__init__(
             Vec3(0, 0, 0),
-            "models/act_p3d_chan",
-            {"stand": "models/a_p3d_chan_idle", "walk": "models/a_p3d_chan_run"},
+            "models/panda_chan/act_p3d_chan",
+            {"stand": "models/panda_chan/a_p3d_chan_idle", "walk": "models/panda_chan/a_p3d_chan_run"},
             5,
             10,
             "player",
@@ -97,7 +97,7 @@ class Player(GameObject):
         self.actor.getChild(0).setH(180)
 
          #load laser
-        self.beamModel = loader.loadModel("models/bambooLaser.egg")
+        self.beamModel = loader.loadModel("models/BambooLaser/bambooLaser.egg")
         self.beamModel.reparentTo(self.actor)
         self.beamModel.setZ(1.5)
         # prevents lights from affecting this model
@@ -157,7 +157,7 @@ class Player(GameObject):
         # for loop to create and store love images in self.healthIcons
         for i in range(self.maxHealth):
             heartImage = OnscreenImage(
-                image= "UI/health.png",
+                image= "models/UI/health.png",
                 pos = (-1.23 + (i * 0.1),0, 0.8),
                 scale=0.04
             )
@@ -166,7 +166,7 @@ class Player(GameObject):
 
             self.healthIcons.append(heartImage)
 
-        self.beamHitModel = loader.loadModel("BambooLaser/bambooLaserHit.egg")
+        self.beamHitModel = loader.loadModel("models/BambooLaser/bambooLaserHit.egg")
         self.beamHitModel.reparentTo(render)
         self.beamHitModel.setZ(1.5)
         self.beamHitModel.setLightOff()
@@ -186,7 +186,7 @@ class Player(GameObject):
         self.beamHitLight.setAttenuation((1.0,0.1,0.5))
         self.beamHitLightNodePath = render.attachNewNode(self.beamHitLight)
 
-        self.damageTakenModel = loader.loadModel("BambooLaser/playerHit.egg")
+        self.damageTakenModel = loader.loadModel("models/BambooLaser/playerHit.egg")
         self.damageTakenModel.setLightOff()
         self.damageTakenModel.setZ(0.1)
         self.damageTakenModel.reparentTo(self.actor)
@@ -343,7 +343,6 @@ class Player(GameObject):
         if self.damageTakenModelTimer <= 0:
             self.damageTakenModel.hide()
        
-
     def cleanup(self):
         base.cTrav.removeCollider(self.rayNodePath)
         # remove scoreUI from root path
@@ -392,17 +391,16 @@ class Enemy(GameObject):
             pass
 
 class WalkingEnemy(Enemy):
-
     
     def __init__(self, pos):
         super().__init__( pos,
-                 "SimpleEnemy/simpleEnemy.egg",
+                 "models/SimpleEnemy/simpleEnemy.egg",
                  {
-                     "stand" : "SimpleEnemy/simpleEnemy-stand.egg",
-                     "walk" : "SimpleEnemy/simpleEnemy-walk.egg",
-                     "attack" : "SimpleEnemy/simpleEnemy-attack.egg",
-                     "die" : "SimpleEnemy/simpleEnemy-die.egg",
-                     "spawn" : "SimpleEnemy/simpleEnemy-spawn.egg",
+                     "stand" : "models/SimpleEnemy/simpleEnemy-stand.egg",
+                     "walk" : "models/SimpleEnemy/simpleEnemy-walk.egg",
+                     "attack" : "models/SimpleEnemy/simpleEnemy-attack.egg",
+                     "die" : "models/SimpleEnemy/simpleEnemy-die.egg",
+                     "spawn" : "models/SimpleEnemy/simpleEnemy-spawn.egg",
                  },
                  3.0,
                  7.0,
@@ -448,7 +446,7 @@ class WalkingEnemy(Enemy):
 
          # direction vector of the enemy
         self.yVector = Vec2(0,1)
-
+        
     def runLogic(self, player, dt):
 
         spawnControl = self.actor.getAnimControl("spawn")
@@ -511,15 +509,12 @@ class WalkingEnemy(Enemy):
                     self.attackDelayTimer = self.attackDelay
                     self.actor.play("attack")
 
-
-
         self.actor.setH(heading)
 
     def alterHealth(self, dHealth):
         self.updateHealthVisual()
         super().alterHealth(dHealth)
         
-
     def updateHealthVisual(self):
         perc = self.health/self.maxHealth
         if perc < 0:
@@ -531,9 +526,9 @@ class TrapEnemy(Enemy):
 
     def __init__(self, pos):
         super().__init__(pos, 
-                         "SlidingTrap/trap", 
-                         {'walk':'SlidingTrap/trap-walk',
-                          'stand':'SlidingTrap/trap-stand'
+                         "models/SlidingTrap/trap", 
+                         {'walk':'models/SlidingTrap/trap-walk',
+                          'stand':'models/SlidingTrap/trap-stand'
                           }, 
                          100.0, 
                          10.0, 

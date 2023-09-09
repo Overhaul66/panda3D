@@ -31,8 +31,16 @@ class Game(ShowBase):
         #properties.setSize(1000, 750)
         #properties.setTitle("Game")
         #self.win.requestProperties(properties)
+        
+        # music and sfx
+        music = loader.loadMusic("music/Defending-the-Princess-Haunted_v002.ogg")
+        music.setLoop(True)
+        music.setVolume(0.5)
+        music.play()
 
-        self.environment = self.loader.loadModel("Environment/environment")
+        self.enemySpawnSound = loader.loadSfx("music/enemySpawn.ogg")
+
+        self.environment = self.loader.loadModel("models/Environment/environment")
         self.environment.reparentTo(self.render)
 
         self.pusher = CollisionHandlerPusher()
@@ -122,10 +130,10 @@ class Game(ShowBase):
         numPointsPerWall = 5
         for i in range(numPointsPerWall):
             coord = 7.0/numPointsPerWall + 0.5
-            self.spawnPoints.append(Vec3(-7.0, coord, 0))
-            self.spawnPoints.append(Vec3(7.0, coord, 0))
-            self.spawnPoints.append(Vec3(coord, -7.0, 0))
-            self.spawnPoints.append(Vec3(coord, 7.0, 0))
+            self.spawnPoints.append(Vec3(-5.0, coord, 0))
+            self.spawnPoints.append(Vec3(5.0, coord, 0))
+            self.spawnPoints.append(Vec3(coord, -5.0, 0))
+            self.spawnPoints.append(Vec3(coord, 5.0, 0))
         # Values to control when to spawn enemies, and
         # how many enemies there may be at once     
         self.initialSpawnInterval = 1.0
@@ -167,7 +175,7 @@ class Game(ShowBase):
                 # update all enemies and traps
                 [enemy.update(self.player, dt) for enemy in self.enemies]
                 [trap.update(self.player, dt) for trap in self.trapEnemies]
-                #get a list of daed enemies
+                # get a list of dead enemies
                 newlyDeadEnemies = [enemy for enemy in self.enemies if enemy.health <= 0]
                 #remove dead enemies from enemy list
                 self.enemies = [enemy for enemy in self.enemies if enemy.health > 0]
@@ -311,7 +319,8 @@ class Game(ShowBase):
         if len(self.enemies) < self.maxEnemies:
             spawnPoint = random.choice(self.spawnPoints)
             newEnemy = WalkingEnemy(spawnPoint)
+            self.enemySpawnSound.play()
             self.enemies.append(newEnemy)
-
+        
 game = Game()
 game.run()
